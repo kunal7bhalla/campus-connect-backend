@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const SendOTP = async (email, otp) => {
   try {
     const response = await resend.emails.send({
-      from: 'Campus Connect <onboarding@resend.dev>',
+      from: 'Campus Connect <noreply@campuslink.co.in>',
       to: email,
       subject: 'Your OTP for Campus Connect',
       html: `
