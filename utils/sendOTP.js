@@ -1,21 +1,13 @@
-require('dotenv').config();
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: String(process.env.EMAIL),
-    pass: String(process.env.EMAIL_PASSWORD),
-  },
-});
-
-const sendOTP = async (email, otp) => {
+const SendOTP = async (email, otp) => {
   try {
-    await transporter.sendMail({
-      from: `"Campus Connect" <${process.env.EMAIL}`,
+    const response = await resend.emails.send({
+      from: 'Campus Connect <onboarding@resend.dev>',
       to: email,
-      subject: 'Your OTP',
+      subject: 'Your OTP for Campus Connect',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
           <h2 style="color: #6C63FF;">Campus Connect</h2>
@@ -27,12 +19,13 @@ const sendOTP = async (email, otp) => {
       `,
     });
 
+    console.log('Email sent:', response);
     return true;
 
   } catch (error) {
-    console.log('FULL ERROR:', error);
+    console.error(`Error sending OTP: ${error.message}`);
     return false;
   }
 };
 
-module.exports = sendOTP;
+module.exports = SendOTP;

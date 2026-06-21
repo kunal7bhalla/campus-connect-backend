@@ -14,9 +14,9 @@ const register = async (req, res) => {
     const { fullName, email, password } = req.body;
 
     // Check university email
-    if (!email.endsWith('@cuchd.in')) {
-      return res.status(400).json({ message: 'Only @cuchd.in emails are allowed!' });
-    }
+    // if (!email.endsWith('@cuchd.in')) {
+    //   return res.status(400).json({ message: 'Only @cuchd.in emails are allowed!' });
+    // }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
