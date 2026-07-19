@@ -1,9 +1,9 @@
-const express = require('express');
-const http = require('http');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const { Server } = require('socket.io');
-const connectDB = require('./config/db');
+const express = require("express");
+const http = require("http");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const { Server } = require("socket.io");
+const connectDB = require("./config/db");
 
 dotenv.config();
 
@@ -13,8 +13,8 @@ const server = http.createServer(app);
 // Socket.io setup
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
+    origin: "*",
+    methods: ["GET", "POST"],
   },
 });
 
@@ -25,73 +25,81 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
+// Health check (for uptime pings / keep-alive)
+app.get("/healthz", (req, res) => {
+  res.status(200).send("OK");
+});
+
 // Routes
-const authRoutes = require('./routes/authRoutes');
-const profileRoutes = require('./routes/profileRoutes');
-const matchRoutes = require('./routes/matchRoutes');
-const chatRoutes = require('./routes/chatRoutes');
-const dealRoutes = require('./routes/dealRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
-const reportRoutes = require('./routes/reportRoutes');
-const adminRoutes = require('./routes/adminRoutes');
+const authRoutes = require("./routes/authRoutes");
+const profileRoutes = require("./routes/profileRoutes");
+const matchRoutes = require("./routes/matchRoutes");
+const chatRoutes = require("./routes/chatRoutes");
+const dealRoutes = require("./routes/dealRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
-app.use('/api/admin', adminRoutes);
+app.use("/api/admin", adminRoutes);
 
-app.use('/api/auth', authRoutes);
-app.use('/api/profile', profileRoutes);
-app.use('/api/match', matchRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/deals', dealRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/report', reportRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/match", matchRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/deals", dealRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/api/report", reportRoutes);
 
 // Socket.io logic
 const onlineUsers = new Map(); // store online users
 
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
 
   // User joins with their userId
-  socket.on('join', (userId) => {
+  socket.on("join", (userId) => {
     onlineUsers.set(userId, socket.id);
-    console.log('User joined:', userId);
+    console.log("User joined:", userId);
   });
 
   // Send message in real time
-  socket.on('sendMessage', ({ conversationId, senderId, receiverId, message }) => {
-    const receiverSocketId = onlineUsers.get(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('receiveMessage', {
-        conversationId,
-        senderId,
-        message,
-        createdAt: new Date(),
-      });
-    }
-  });
+  socket.on(
+    "sendMessage",
+    ({ conversationId, senderId, receiverId, message }) => {
+      const receiverSocketId = onlineUsers.get(receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("receiveMessage", {
+          conversationId,
+          senderId,
+          message,
+          createdAt: new Date(),
+        });
+      }
+    },
+  );
 
   // Typing indicator
-  socket.on('typing', ({ receiverId, senderName }) => {
+  socket.on("typing", ({ receiverId, senderName }) => {
     const receiverSocketId = onlineUsers.get(receiverId);
     if (receiverSocketId) {
-      io.to(receiverSocketId).emit('typing', { senderName });
+      io.to(receiverSocketId).emit("typing", { senderName });
     }
   });
 
   // Stop typing
-  socket.on('stopTyping', ({ receiverId }) => {
+  socket.on("stopTyping", ({ receiverId }) => {
     const receiverSocketId = onlineUsers.get(receiverId);
     if (receiverSocketId) {
-      io.to(receiverSocketId).emit('stopTyping');
+      io.to(receiverSocketId).emit("stopTyping");
     }
   });
 
   // User disconnects
-  socket.on('disconnect', () => {
+  socket.on("disconnect", () => {
     onlineUsers.forEach((socketId, userId) => {
       if (socketId === socket.id) {
         onlineUsers.delete(userId);
-        console.log('User disconnected:', userId);
+        console.log("User disconnected:", userId);
       }
     });
   });
