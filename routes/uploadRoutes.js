@@ -7,6 +7,7 @@ const {
   deleteProfilePhoto,
   uploadDealImage,
   deleteDealImage,
+  uploadChatImage,
 } = require('../controllers/uploadController');
 
 // Upload profile photo
@@ -20,5 +21,9 @@ router.post('/deal-image', authMiddleware, adminMiddleware, upload.single('image
 
 // Delete deal image — admin only
 router.delete('/deal-image', authMiddleware, adminMiddleware, deleteDealImage);
+
+// Upload chat image
+router.post('/chat-image', authMiddleware, upload.single('image'), uploadChatImage);
+
 
 module.exports = router;

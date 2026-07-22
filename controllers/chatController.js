@@ -1,18 +1,16 @@
 const Message = require('../models/Message');
 const User = require('../models/User');
 const CryptoJS = require('crypto-js');
+const axios = require('axios');
 
-// Generate unique conversation ID from two user IDs
 const getConversationId = (userId1, userId2) => {
   return [userId1, userId2].sort().join('_');
 };
 
-// Encrypt message
 const encryptMessage = (message) => {
   return CryptoJS.AES.encrypt(message, process.env.MESSAGE_SECRET).toString();
 };
 
-// Decrypt message
 const decryptMessage = (encryptedMessage) => {
   const bytes = CryptoJS.AES.decrypt(encryptedMessage, process.env.MESSAGE_SECRET);
   return bytes.toString(CryptoJS.enc.Utf8);
@@ -21,26 +19,26 @@ const decryptMessage = (encryptedMessage) => {
 // @route POST /api/chat/send
 const sendMessage = async (req, res) => {
   try {
-    const { receiverId, message } = req.body;
+    const { receiverId, message, messageType } = req.body;
+    const type = messageType === 'image' || messageType === 'gif' ? messageType : 'text';
 
-    // Check if users are matched
     const currentUser = await User.findById(req.user._id);
     if (!currentUser.matches.includes(receiverId)) {
       return res.status(403).json({ message: 'You can only message matched users!' });
     }
 
-    // Generate conversation ID
     const conversationId = getConversationId(req.user._id.toString(), receiverId);
 
-    // Encrypt message
-    const encryptedMessage = encryptMessage(message);
+    // Only encrypt plain text — image/gif URLs stored as-is
+    const storedMessage = type === 'text' ? encryptMessage(message) : message;
 
-    // Save message
     const newMessage = await Message.create({
       conversationId,
       sender: req.user._id,
       receiver: receiverId,
-      message: encryptedMessage,
+      message: storedMessage,
+      messageType: type,
+      isEncrypted: type === 'text',
     });
 
     res.status(201).json({
@@ -50,7 +48,8 @@ const sendMessage = async (req, res) => {
         conversationId,
         sender: req.user._id,
         receiver: receiverId,
-        message: message, // send original to sender
+        message: message,
+        messageType: type,
         createdAt: newMessage.createdAt,
       },
     });
@@ -72,12 +71,12 @@ const getMessages = async (req, res) => {
     const messages = await Message.find({ conversationId })
       .sort({ createdAt: 1 });
 
-    // Decrypt messages
     const decryptedMessages = messages.map((msg) => ({
       id: msg._id,
       sender: msg.sender,
       receiver: msg.receiver,
-      message: decryptMessage(msg.message),
+      message: msg.isEncrypted ? decryptMessage(msg.message) : msg.message,
+      messageType: msg.messageType,
       isRead: msg.isRead,
       createdAt: msg.createdAt,
     }));
@@ -96,7 +95,6 @@ const getConversations = async (req, res) => {
     const currentUser = await User.findById(req.user._id)
       .populate('matches', '-password -otp -likes');
 
-    // For each match get the last message
     const conversations = await Promise.all(
       currentUser.matches.map(async (match) => {
         const conversationId = getConversationId(
@@ -110,9 +108,11 @@ const getConversations = async (req, res) => {
         return {
           user: match,
           lastMessage: lastMessage ? {
-            message: decryptMessage(lastMessage.message),
+            message: lastMessage.isEncrypted ? decryptMessage(lastMessage.message) : lastMessage.message,
+            messageType: lastMessage.messageType,
             createdAt: lastMessage.createdAt,
             isRead: lastMessage.isRead,
+            sender: lastMessage.sender,
           } : null,
         };
       })
@@ -151,4 +151,36 @@ const markAsRead = async (req, res) => {
   }
 };
 
-module.exports = { sendMessage, getMessages, getConversations, markAsRead };
+// @route GET /api/chat/gif-search?q=funny
+// const searchGifs = async (req, res) => {
+//   try {
+//     const { q } = req.query;
+//     if (!q) {
+//       return res.status(400).json({ message: 'Search query required!' });
+//     }
+
+//     const response = await axios.get('https://tenor.googleapis.com/v2/search', {
+//       params: {
+//         q,
+//         key: process.env.TENOR_API_KEY,
+//         client_key: 'campus_link',
+//         limit: 20,
+//         media_filter: 'gif',
+//       },
+//     });
+
+//     const gifs = response.data.results.map((gif) => ({
+//       id: gif.id,
+//       url: gif.media_formats.gif.url,
+//       preview: gif.media_formats.tinygif.url,
+//     }));
+
+//     res.status(200).json({ gifs });
+
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Failed to search GIFs' });
+//   }
+// };
+
+module.exports = { sendMessage, getMessages, getConversations, markAsRead};

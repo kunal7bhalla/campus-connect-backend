@@ -1,37 +1,39 @@
-const User = require('../models/User');
-const Deal = require('../models/Deals');
-const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/cloudinary');
+const User = require("../models/User");
+const Deal = require("../models/Deals");
+const {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+} = require("../utils/cloudinary");
 
 // Upload profile photo
 const uploadProfilePhoto = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded!' });
+      return res.status(400).json({ message: "No file uploaded!" });
     }
 
     const user = await User.findById(req.user._id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found!' });
+      return res.status(404).json({ message: "User not found!" });
     }
 
     if (user.profile.photos.length >= 3) {
-      return res.status(400).json({ message: 'Maximum 3 photos allowed!' });
+      return res.status(400).json({ message: "Maximum 3 photos allowed!" });
     }
 
-    const imageUrl = await uploadToCloudinary(req.file.buffer, 'profiles');
+    const imageUrl = await uploadToCloudinary(req.file.buffer, "profiles");
 
     user.profile.photos.push(imageUrl);
     await user.save();
 
     res.status(200).json({
-      message: 'Photo uploaded successfully!',
+      message: "Photo uploaded successfully!",
       imageUrl,
       photos: user.profile.photos,
     });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error!' });
+    res.status(500).json({ message: "Server error!" });
   }
 };
 
@@ -42,24 +44,23 @@ const deleteProfilePhoto = async (req, res) => {
 
     const user = await User.findById(req.user._id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found!' });
+      return res.status(404).json({ message: "User not found!" });
     }
 
     await deleteFromCloudinary(imageUrl);
 
     user.profile.photos = user.profile.photos.filter(
-      (photo) => photo !== imageUrl
+      (photo) => photo !== imageUrl,
     );
     await user.save();
 
     res.status(200).json({
-      message: 'Photo deleted successfully!',
+      message: "Photo deleted successfully!",
       photos: user.profile.photos,
     });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error!' });
+    res.status(500).json({ message: "Server error!" });
   }
 };
 
@@ -67,19 +68,18 @@ const deleteProfilePhoto = async (req, res) => {
 const uploadDealImage = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded!' });
+      return res.status(400).json({ message: "No file uploaded!" });
     }
 
-    const imageUrl = await uploadToCloudinary(req.file.buffer, 'deals');
+    const imageUrl = await uploadToCloudinary(req.file.buffer, "deals");
 
     res.status(200).json({
-      message: 'Deal image uploaded successfully!',
+      message: "Deal image uploaded successfully!",
       imageUrl,
     });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error!' });
+    res.status(500).json({ message: "Server error!" });
   }
 };
 
@@ -96,11 +96,29 @@ const deleteDealImage = async (req, res) => {
       await deal.save();
     }
 
-    res.status(200).json({ message: 'Deal image deleted successfully!' });
-
+    res.status(200).json({ message: "Deal image deleted successfully!" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error!' });
+    res.status(500).json({ message: "Server error!" });
+  }
+};
+
+// Upload chat image
+const uploadChatImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded!" });
+    }
+
+    const imageUrl = await uploadToCloudinary(req.file.buffer, "chat");
+
+    res.status(200).json({
+      message: "Chat image uploaded successfully!",
+      imageUrl,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error!" });
   }
 };
 
@@ -109,4 +127,5 @@ module.exports = {
   deleteProfilePhoto,
   uploadDealImage,
   deleteDealImage,
+  uploadChatImage,
 };

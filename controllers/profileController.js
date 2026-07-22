@@ -80,23 +80,23 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// @route GET /api/profile/browse
 const browseProfiles = async (req, res) => {
   try {
     const currentUser = await User.findById(req.user._id);
 
-    // Get all users except:
-    // 1. Current user
-    // 2. Already matched users
-    // 3. Blocked users
+    const excludedIds = [
+      req.user._id,
+      ...currentUser.matches,
+      ...currentUser.blockedUsers,
+      ...currentUser.likes,       // ← add this: exclude already-liked users too
+    ];
+
     const users = await User.find({
-      _id: {
-        $ne: req.user._id,                    // not current user
-        $nin: currentUser.matches,             // not already matched
-      },
+      _id: { $nin: excludedIds },
+      blockedUsers: { $ne: req.user._id },
       isVerified: true,
       isBlocked: false,
-      'profile.age': { $exists: true },        // profile is complete
+      'profile.age': { $exists: true },
     }).select('-password -otp');
 
     res.status(200).json({ users });

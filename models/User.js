@@ -35,6 +35,7 @@ const userSchema = new mongoose.Schema({
   },
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   matches: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   isAdmin: {
     type: Boolean,
     default: false,

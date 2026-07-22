@@ -6,6 +6,7 @@ const {
   getMessages,
   getConversations,
   markAsRead,
+  searchGifs,
 } = require('../controllers/chatController');
 
 // Send message
@@ -19,5 +20,7 @@ router.get('/:userId', authMiddleware, getMessages);
 
 // Mark messages as read
 router.put('/read/:userId', authMiddleware, markAsRead);
+
+// router.get('/gif-search', authMiddleware, searchGifs);
 
 module.exports = router;

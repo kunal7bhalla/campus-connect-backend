@@ -15,6 +15,16 @@ const reportUser = async (req, res) => {
             return res.status(400).json({ message: 'You cannot report yourself' });
         }
 
+        if (!reason || !reason.trim()) {
+            return res.status(400).json({ message: 'Please provide a reason for the report' });
+        }
+
+        await Report.create({
+            reporter: req.user._id,
+            reportedUser: req.params.id,
+            reason: reason.trim(),
+        });
+
         res.status(200).json({ message: 'User reported successfully' });
 
     }
@@ -41,7 +51,14 @@ const blockUser = async (req, res) => {
 
         currentUser.matches=currentUser.matches.filter(match => match.toString() !== req.params.id);
 
-        blocked.matches=blocked.matches.filter(match => match.toString() !== req.user._id);
+        userToBlock.matches = userToBlock.matches.filter(
+            match => match.toString() !== req.user._id.toString()
+        );
+
+        // Add to current user's block list (one-directional — only the blocker won't see them again)
+        if (!currentUser.blockedUsers.includes(req.params.id)) {
+            currentUser.blockedUsers.push(req.params.id);
+        }
 
         await currentUser.save();
         await userToBlock.save();
