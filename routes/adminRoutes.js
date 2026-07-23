@@ -6,7 +6,7 @@ const {
   getAllReports,
   updateReportStatus,
   deleteReport,
-} = require('../controllers/adminReportController');
+} = require('../controllers/adminreportController');
 
 // System & Analytics Stats
 router.get('/stats', authMiddleware, adminMiddleware, getStats);
