@@ -4,7 +4,7 @@ const { reportUser, blockUser } = require('../controllers/reportController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
 // User reporting and blocking routes
-router.post('/:id', auth, reportUser);
-router.post('/block/:id', auth, blockUser);
+router.post('/:id', authMiddleware, reportUser);
+router.post('/block/:id', authMiddleware, blockUser);
 
 module.exports = router;
