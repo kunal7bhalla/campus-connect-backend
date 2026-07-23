@@ -1,12 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../middleware/authMiddleware');
+const { auth } = require('../middleware/auth');
 const { reportUser, blockUser } = require('../controllers/reportController');
 
-// Report a user
-router.post('/:id', authMiddleware, reportUser);
-
-// Block a user
-router.post('/block/:id', authMiddleware, blockUser);
+// User reporting and blocking routes
+router.post('/:id', auth, reportUser);
+router.post('/block/:id', auth, blockUser);
 
 module.exports = router;

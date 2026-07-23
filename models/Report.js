@@ -1,25 +1,28 @@
 const mongoose = require('mongoose');
 
-const reportSchema = new mongoose.Schema({
-  reporter: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+const reportSchema = new mongoose.Schema(
+  {
+    reporter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    reportedUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    reason: {
+      type: String,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'reviewed', 'dismissed'],
+      default: 'pending',
+    },
   },
-  reportedUser: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  reason: {
-    type: String,
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'reviewed', 'dismissed'],
-    default: 'pending',
-  },
-}, { timestamps: true });
+  { timestamps: true }
+);
 
 module.exports = mongoose.model('Report', reportSchema);
