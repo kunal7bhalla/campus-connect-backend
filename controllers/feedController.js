@@ -21,6 +21,32 @@ const getFeedPosts = async (req, res) => {
   }
 };
 
+const createFeedPost = async (req, res) => {
+  try {
+    const { imageUrl, caption } = req.body;
+
+    if (!imageUrl) {
+      return res.status(400).json({ message: 'Image URL is required!' });
+    }
+
+    const newPost = await FeedPost.create({
+      user: req.user._id,
+      imageUrl,
+      caption: caption || '',
+    });
+
+    const populatedPost = await FeedPost.findById(newPost._id).populate(
+      'user',
+      'fullName profile'
+    );
+
+    res.status(201).json({ message: 'Post created!', post: populatedPost });
+  } catch (error) {
+    console.error('Error creating feed post:', error);
+    res.status(500).json({ message: 'Server error!' });
+  }
+};
+
 const toggleLikePost = async (req, res) => {
   try {
     const { postId } = req.params;
@@ -86,6 +112,7 @@ const reportPost = async (req, res) => {
 
 module.exports = {
   getFeedPosts,
+  createFeedPost,
   toggleLikePost,
   reportPost,
 };
