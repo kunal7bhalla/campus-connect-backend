@@ -1,6 +1,6 @@
 const User = require("../models/User");
 const Deal = require("../models/Deals");
-const FeedPost = require("../models/FeedPosts"); // Updated to match FeedPosts.js
+const FeedPost = require("../models/FeedPost"); // Updated to match FeedPosts.js
 const {
   uploadToCloudinary,
   deleteFromCloudinary,
