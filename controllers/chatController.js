@@ -19,8 +19,11 @@ const decryptMessage = (encryptedMessage) => {
 // @route POST /api/chat/send
 const sendMessage = async (req, res) => {
   try {
-    const { receiverId, message, messageType } = req.body;
-    const type = messageType === 'image' || messageType === 'gif' ? messageType : 'text';
+    const { receiverId, message, messageType, imageUrl } = req.body;
+    
+    // Auto-detect image type if imageUrl is present
+    const isImageUpload = !!imageUrl;
+    const type = isImageUpload ? 'image' : (messageType === 'image' || messageType === 'gif' ? messageType : 'text');
 
     const currentUser = await User.findById(req.user._id);
     if (!currentUser.matches.includes(receiverId)) {
@@ -29,16 +32,26 @@ const sendMessage = async (req, res) => {
 
     const conversationId = getConversationId(req.user._id.toString(), receiverId);
 
+    // If it's an image message, store imageUrl in message body (or imageUrl field)
+    const contentToStore = isImageUpload ? imageUrl : message;
+
     // Only encrypt plain text — image/gif URLs stored as-is
-    const storedMessage = type === 'text' ? encryptMessage(message) : message;
+    const storedMessage = type === 'text' ? encryptMessage(contentToStore) : contentToStore;
+
+    // Calculate 24-hour expiration for temporary image messages
+    const isTemp = type === 'image';
+    const expires = isTemp ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null;
 
     const newMessage = await Message.create({
       conversationId,
       sender: req.user._id,
       receiver: receiverId,
       message: storedMessage,
+      imageUrl: isImageUpload ? imageUrl : null,
       messageType: type,
       isEncrypted: type === 'text',
+      isTemporary: isTemp,
+      expireAt: expires,
     });
 
     res.status(201).json({
@@ -48,14 +61,17 @@ const sendMessage = async (req, res) => {
         conversationId,
         sender: req.user._id,
         receiver: receiverId,
-        message: message,
+        message: contentToStore,
+        imageUrl: isImageUpload ? imageUrl : null,
         messageType: type,
+        isTemporary: isTemp,
+        expireAt: expires,
         createdAt: newMessage.createdAt,
       },
     });
 
   } catch (error) {
-    console.error(error);
+    console.error('Error sending message:', error);
     res.status(500).json({ message: 'Server error!' });
   }
 };

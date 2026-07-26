@@ -39,9 +39,9 @@ const dealRoutes = require("./routes/dealRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const feedRoutes = require("./routes/feedRoutes"); // Global photo feed routes
 
 app.use("/api/admin", adminRoutes);
-
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/match", matchRoutes);
@@ -49,9 +49,10 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/deals", dealRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/report", reportRoutes);
+app.use("/api/feed", feedRoutes); // Mount public photo feed API
 
 // Socket.io logic
-const onlineUsers = new Map(); // store online users
+const onlineUsers = new Map(); // Store online users (userId => socketId)
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
@@ -62,16 +63,31 @@ io.on("connection", (socket) => {
     console.log("User joined:", userId);
   });
 
-  // Send message in real time
+  // Send message in real time (Supports text, images, and 24h temporary metadata)
   socket.on(
     "sendMessage",
-    ({ conversationId, senderId, receiverId, message }) => {
+    ({
+      conversationId,
+      senderId,
+      receiverId,
+      message,
+      imageUrl,
+      messageType,
+      expireAt,
+      isTemporary,
+    }) => {
       const receiverSocketId = onlineUsers.get(receiverId);
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("receiveMessage", {
           conversationId,
+          sender: senderId,
           senderId,
-          message,
+          receiver: receiverId,
+          message: message || "",
+          imageUrl: imageUrl || null,
+          messageType: messageType || (imageUrl ? "image" : "text"),
+          isTemporary: isTemporary || !!imageUrl,
+          expireAt: expireAt || (imageUrl ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null),
           createdAt: new Date(),
         });
       }

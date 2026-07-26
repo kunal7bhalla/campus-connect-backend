@@ -18,7 +18,11 @@ const messageSchema = new mongoose.Schema(
     },
     message: {
       type: String,
-      required: true,
+      default: "", // Changed from required: true to allow image-only messages
+    },
+    imageUrl: {
+      type: String,
+      default: null,
     },
     messageType: {
       type: String,
@@ -33,9 +37,21 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isTemporary: {
+      type: Boolean,
+      default: false,
+    },
+    // MongoDB TTL Index: Document auto-deletes when expireAt reaches current time
+    expireAt: {
+      type: Date,
+      default: null,
+    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
+
+// Create TTL index on expireAt field
+messageSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
 
 const Message = mongoose.model("Message", messageSchema);
 
