@@ -1,5 +1,6 @@
 const FeedPost = require('../models/FeedPost');
 const User = require('../models/User');
+const { deleteFromCloudinary } = require('../utils/cloudinary');
 
 const getFeedPosts = async (req, res) => {
   try {
@@ -110,9 +111,52 @@ const reportPost = async (req, res) => {
   }
 };
 
+// 🌟 Get all posts shared by a specific user (For profile tab)
+const getUserFeedPosts = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const posts = await FeedPost.find({ user: userId }).sort({ createdAt: -1 });
+    res.status(200).json({ posts });
+  } catch (error) {
+    console.error('Error fetching user feed posts:', error);
+    res.status(500).json({ message: 'Server error!' });
+  }
+};
+
+// 🗑️ Delete a feed post (Author only)
+const deleteFeedPost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const post = await FeedPost.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found!' });
+    }
+
+    // Verify post ownership
+    if (post.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized to delete this post!' });
+    }
+
+    // Delete image from Cloudinary
+    if (post.imageUrl) {
+      await deleteFromCloudinary(post.imageUrl);
+    }
+
+    await FeedPost.findByIdAndDelete(postId);
+
+    res.status(200).json({ message: 'Post deleted successfully!' });
+  } catch (error) {
+    console.error('Error deleting feed post:', error);
+    res.status(500).json({ message: 'Server error!' });
+  }
+};
+
 module.exports = {
   getFeedPosts,
   createFeedPost,
   toggleLikePost,
   reportPost,
+  getUserFeedPosts,
+  deleteFeedPost,
 };
