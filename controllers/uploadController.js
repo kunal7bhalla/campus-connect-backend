@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const Deal = require("../models/Deals");
+const FeedPost = require("../models/FeedPosts"); // Updated to match FeedPosts.js
 const {
   uploadToCloudinary,
   deleteFromCloudinary,
@@ -90,10 +91,12 @@ const deleteDealImage = async (req, res) => {
 
     await deleteFromCloudinary(imageUrl);
 
-    const deal = await Deal.findById(dealId);
-    if (deal) {
-      deal.image = null;
-      await deal.save();
+    if (dealId) {
+      const deal = await Deal.findById(dealId);
+      if (deal) {
+        deal.image = null;
+        await deal.save();
+      }
     }
 
     res.status(200).json({ message: "Deal image deleted successfully!" });
@@ -122,10 +125,53 @@ const uploadChatImage = async (req, res) => {
   }
 };
 
+// Upload public feed image
+const uploadFeedImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded!" });
+    }
+
+    const imageUrl = await uploadToCloudinary(req.file.buffer, "feed");
+
+    res.status(200).json({
+      message: "Feed photo uploaded successfully!",
+      imageUrl,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error!" });
+  }
+};
+
+// Delete public feed image
+const deleteFeedImage = async (req, res) => {
+  try {
+    const { imageUrl, postId } = req.body;
+
+    if (!imageUrl) {
+      return res.status(400).json({ message: "Image URL is required!" });
+    }
+
+    await deleteFromCloudinary(imageUrl);
+
+    if (postId) {
+      await FeedPost.findByIdAndDelete(postId);
+    }
+
+    res.status(200).json({ message: "Feed post deleted successfully!" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error!" });
+  }
+};
+
 module.exports = {
   uploadProfilePhoto,
   deleteProfilePhoto,
   uploadDealImage,
   deleteDealImage,
   uploadChatImage,
+  uploadFeedImage,
+  deleteFeedImage,
 };
